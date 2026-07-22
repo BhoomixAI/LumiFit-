@@ -1,0 +1,434 @@
+[
+  {
+    "id": "top-01",
+    "name": "Luxe Silk Satin Blouse",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1598554747436-c9293d6a588f?auto=format&fit=crop&w=800&q=80",
+    "color": "Champagne",
+    "style": "formal, warm-toned, elegant",
+    "price": 88.00
+  },
+  {
+    "id": "top-02",
+    "name": "Organic Linen Button-Down Shirt",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80",
+    "color": "Ivory",
+    "style": "casual, warm-toned, crisp",
+    "price": 65.00
+  },
+  {
+    "id": "top-03",
+    "name": "Cashmere Turtleneck Knit Sweater",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80",
+    "color": "Soft Lavender",
+    "style": "casual, cool-toned, cozy",
+    "price": 120.00
+  },
+  {
+    "id": "top-04",
+    "name": "Ribbed Seamless Crop Top",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80",
+    "color": "Terracotta",
+    "style": "casual, warm-toned, athletic",
+    "price": 42.00
+  },
+  {
+    "id": "top-05",
+    "name": "Double-Breasted Blazer Top",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?auto=format&fit=crop&w=800&q=80",
+    "color": "Midnight Navy",
+    "style": "formal, cool-toned, tailored",
+    "price": 145.00
+  },
+  {
+    "id": "top-06",
+    "name": "French Lace Corset Bustier",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+    "color": "Blush Pink",
+    "style": "formal, cool-toned, romantic",
+    "price": 94.00
+  },
+  {
+    "id": "top-07",
+    "name": "Oversized Cotton Boyfriend Shirt",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&w=800&q=80",
+    "color": "Baby Blue",
+    "style": "casual, cool-toned, relaxed",
+    "price": 58.00
+  },
+  {
+    "id": "top-08",
+    "name": "Cropped Cable Knit Cardigan",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80",
+    "color": "Butter Yellow",
+    "style": "casual, warm-toned, vintage",
+    "price": 72.00
+  },
+  {
+    "id": "top-09",
+    "name": "Asymmetric One-Shoulder Silk Top",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=800&q=80",
+    "color": "Emerald Green",
+    "style": "formal, cool-toned, chic",
+    "price": 115.00
+  },
+  {
+    "id": "top-10",
+    "name": "Draped Satin Halter Top",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=800&q=80",
+    "color": "Rose Gold",
+    "style": "formal, warm-toned, party",
+    "price": 79.00
+  },
+  {
+    "id": "top-11",
+    "name": "Striped Breton Linen Tee",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
+    "color": "Navy & White",
+    "style": "casual, cool-toned, Parisian",
+    "price": 48.00
+  },
+  {
+    "id": "top-12",
+    "name": "Puff-Sleeve Organza Blouse",
+    "category": "top",
+    "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    "color": "Pearl White",
+    "style": "formal, cool-toned, statement",
+    "price": 105.00
+  },
+  {
+    "id": "bottom-01",
+    "name": "High-Waisted Wide Leg Trousers",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=800&q=80",
+    "color": "Desert Beige",
+    "style": "formal, warm-toned, minimalist",
+    "price": 95.00
+  },
+  {
+    "id": "bottom-02",
+    "name": "Flowy Pleated Satin Midi Skirt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=800&q=80",
+    "color": "Pastel Mint",
+    "style": "casual, cool-toned, feminine",
+    "price": 78.00
+  },
+  {
+    "id": "bottom-03",
+    "name": "Classic Straight Denim Jeans",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80",
+    "color": "Powder Blue Wash",
+    "style": "casual, cool-toned, classic",
+    "price": 85.00
+  },
+  {
+    "id": "bottom-04",
+    "name": "Tailored High-Rise Linen Shorts",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&w=800&q=80",
+    "color": "Soft Coral",
+    "style": "casual, warm-toned, resortwear",
+    "price": 54.00
+  },
+  {
+    "id": "bottom-05",
+    "name": "Architectural Wrap Pencil Skirt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1582142839970-2b93284439bb?auto=format&fit=crop&w=800&q=80",
+    "color": "Imperial Indigo",
+    "style": "formal, cool-toned, business",
+    "price": 110.00
+  },
+  {
+    "id": "bottom-06",
+    "name": "Relaxed Fit Cargo Trousers",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80",
+    "color": "Sage Green",
+    "style": "casual, warm-toned, streetwear",
+    "price": 89.00
+  },
+  {
+    "id": "bottom-07",
+    "name": "Tiered Ruffle Chiffon Maxi Skirt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
+    "color": "Butter Yellow",
+    "style": "casual, warm-toned, boho",
+    "price": 92.00
+  },
+  {
+    "id": "bottom-08",
+    "name": "High-Rise Flare Stretch Pants",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1506629082925-2368c48a734e?auto=format&fit=crop&w=800&q=80",
+    "color": "Ebony Black",
+    "style": "formal, cool-toned, sleek",
+    "price": 98.00
+  },
+  {
+    "id": "bottom-09",
+    "name": "Tailored Bermudas with Belt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1516568288280-d54432a7e78c?auto=format&fit=crop&w=800&q=80",
+    "color": "Mocha Brown",
+    "style": "formal, warm-toned, modern",
+    "price": 68.00
+  },
+  {
+    "id": "bottom-10",
+    "name": "Distressed Vintage Mom Jeans",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80",
+    "color": "Light Indigo",
+    "style": "casual, cool-toned, retro",
+    "price": 79.00
+  },
+  {
+    "id": "bottom-11",
+    "name": "A-Line Faux Leather Mini Skirt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=800&q=80",
+    "color": "Cognac Tan",
+    "style": "casual, warm-toned, edgy",
+    "price": 74.00
+  },
+  {
+    "id": "bottom-12",
+    "name": "Satin Bias Cut Midi Skirt",
+    "category": "bottom",
+    "imageUrl": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=800&q=80",
+    "color": "Lilac Mist",
+    "style": "formal, cool-toned, romantic",
+    "price": 86.00
+  },
+  {
+    "id": "dress-01",
+    "name": "Botanical Silk Slip Midi Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
+    "color": "Blush Rose",
+    "style": "formal, cool-toned, romantic",
+    "price": 135.00
+  },
+  {
+    "id": "dress-02",
+    "name": "Emerald Velvet Cocktail Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
+    "color": "Deep Emerald",
+    "style": "formal, cool-toned, glamour",
+    "price": 180.00
+  },
+  {
+    "id": "dress-03",
+    "name": "Tiered Bohemian Maxi Sundress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80",
+    "color": "Warm Amber",
+    "style": "casual, warm-toned, boho",
+    "price": 115.00
+  },
+  {
+    "id": "dress-04",
+    "name": "Minimalist Linen Wrap Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80",
+    "color": "Slate Grey",
+    "style": "casual, cool-toned, minimal",
+    "price": 98.00
+  },
+  {
+    "id": "dress-05",
+    "name": "Sculptural Off-Shoulder Gown",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80",
+    "color": "Burgundy Wine",
+    "style": "formal, cool-toned, haute",
+    "price": 210.00
+  },
+  {
+    "id": "dress-06",
+    "name": "Pastel Floral Chiffon Sun Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?auto=format&fit=crop&w=800&q=80",
+    "color": "Sky Blue Floral",
+    "style": "casual, cool-toned, spring",
+    "price": 89.00
+  },
+  {
+    "id": "dress-07",
+    "name": "Ribbed Bodycon Midi Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+    "color": "Butter Yellow",
+    "style": "casual, warm-toned, modern",
+    "price": 76.00
+  },
+  {
+    "id": "dress-08",
+    "name": "Puff Sleeve Cottagecore Midi Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?auto=format&fit=crop&w=800&q=80",
+    "color": "Sage Olive",
+    "style": "casual, warm-toned, vintage",
+    "price": 110.00
+  },
+  {
+    "id": "dress-09",
+    "name": "Satin Cowl Neck Backless Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=800&q=80",
+    "color": "Midnight Black",
+    "style": "formal, cool-toned, nightout",
+    "price": 140.00
+  },
+  {
+    "id": "dress-10",
+    "name": "Strapless Pleated Party Mini Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80",
+    "color": "Coral Sunrise",
+    "style": "formal, warm-toned, vibrant",
+    "price": 125.00
+  },
+  {
+    "id": "dress-11",
+    "name": "Classic Trench Shirt Dress",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=800&q=80",
+    "color": "Sandstone",
+    "style": "formal, warm-toned, chic",
+    "price": 130.00
+  },
+  {
+    "id": "dress-12",
+    "name": "Embellished Tulle Prom Gown",
+    "category": "dress",
+    "imageUrl": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
+    "color": "Icy Lavender",
+    "style": "formal, cool-toned, ballgown",
+    "price": 245.00
+  },
+  {
+    "id": "jewel-01",
+    "name": "18k Gold Layered Pendant Necklace",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+    "color": "Warm Gold",
+    "style": "formal, warm-toned, timeless",
+    "price": 75.00
+  },
+  {
+    "id": "jewel-02",
+    "name": "Freshwater Pearl Drop Earrings",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
+    "color": "Icy Pearl White",
+    "style": "formal, cool-toned, classic",
+    "price": 62.00
+  },
+  {
+    "id": "jewel-03",
+    "name": "Chunky Gold Link Chain Bracelet",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1611591475119-c48c3b17c768?auto=format&fit=crop&w=800&q=80",
+    "color": "Polished Gold",
+    "style": "casual, warm-toned, statement",
+    "price": 58.00
+  },
+  {
+    "id": "jewel-04",
+    "name": "Diamond Accent Huggie Hoop Earrings",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
+    "color": "Rose Gold",
+    "style": "casual, warm-toned, subtle",
+    "price": 92.00
+  },
+  {
+    "id": "jewel-05",
+    "name": "Celestial Sapphire Starburst Choker",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80",
+    "color": "Deep Sapphire Blue",
+    "style": "formal, cool-toned, jewel",
+    "price": 105.00
+  },
+  {
+    "id": "jewel-06",
+    "name": "Minimalist Sterling Silver Band Ring",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=800&q=80",
+    "color": "Pure Silver",
+    "style": "casual, cool-toned, minimal",
+    "price": 38.00
+  },
+  {
+    "id": "jewel-07",
+    "name": "Emerald Cut Solitaire Tennis Bracelet",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=800&q=80",
+    "color": "Platinum Silver",
+    "style": "formal, cool-toned, luxury",
+    "price": 165.00
+  },
+  {
+    "id": "jewel-08",
+    "name": "Vintage Filigree Gold Locket",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80",
+    "color": "Antique Gold",
+    "style": "casual, warm-toned, vintage",
+    "price": 84.00
+  },
+  {
+    "id": "jewel-09",
+    "name": "Resin & Gold Statement Cuff",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1611591475119-c48c3b17c768?auto=format&fit=crop&w=800&q=80",
+    "color": "Butter Amber",
+    "style": "casual, warm-toned, bold",
+    "price": 49.00
+  },
+  {
+    "id": "jewel-10",
+    "name": "Opal Gemstone Charm Huggies",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
+    "color": "Iridescent Opal",
+    "style": "casual, cool-toned, delicate",
+    "price": 74.00
+  },
+  {
+    "id": "jewel-11",
+    "name": "Baroque Pearl Choker Necklace",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+    "color": "Creamy Pearl",
+    "style": "formal, warm-toned, runway",
+    "price": 118.00
+  },
+  {
+    "id": "jewel-12",
+    "name": "Crystal Chandelier Drop Earrings",
+    "category": "jewelry",
+    "imageUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
+    "color": "Icy Crystal",
+    "style": "formal, cool-toned, evening",
+    "price": 128.00
+  }
+]
