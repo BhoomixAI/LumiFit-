@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { CATALOG_DATA, CatalogItem } from "@/data/catalog";
+import { CatalogItem } from "@/data/catalog";
+import { useCatalog } from "@/hooks/useCatalog";
 import { Search, Sparkles, Check, ShoppingBag, Filter, Tag, X } from "lucide-react";
 
 interface CatalogExplorerProps {
@@ -39,8 +40,10 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   recommendedItemIds,
   onClearAIFilters,
 }) => {
+  const { catalog, loading, error } = useCatalog();
+
   const filteredCatalog = useMemo(() => {
-    return CATALOG_DATA.filter((item) => {
+    return catalog.filter((item) => {
       // 1. Category filter
       const matchesCategory =
         selectedCategory === "all" || item.category === selectedCategory;
@@ -63,14 +66,14 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
 
       return matchesCategory && matchesSearch && matchesPrice && matchesAIRecommendation;
     });
-  }, [selectedCategory, searchQuery, maxPriceFilter, recommendedItemIds]);
+  }, [catalog, selectedCategory, searchQuery, maxPriceFilter, recommendedItemIds]);
 
   const isAIFilterActive = maxPriceFilter !== null || recommendedItemIds.length > 0 || searchQuery !== "";
 
   const handleCategoryClick = (catId: string) => {
     onSelectCategory(catId);
     if (recommendedItemIds.length > 0 && catId !== "all") {
-      const hasItemsInCategory = CATALOG_DATA.some(
+      const hasItemsInCategory = catalog.some(
         (i) => i.category === catId && recommendedItemIds.includes(i.id)
       );
       if (!hasItemsInCategory) {
@@ -183,7 +186,15 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
 
       {/* Catalog Grid Area */}
       <div className="flex-1 overflow-y-auto pt-4 pr-1 custom-scrollbar">
-        {filteredCatalog.length === 0 ? (
+        {loading ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm font-bold text-slate-500">Loading catalog...</p>
+          </div>
+        ) : error ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm font-bold text-rose-600">Failed to load catalog: {error}</p>
+          </div>
+        ) : filteredCatalog.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
             <Filter className="w-10 h-10 text-sky-300" />
             <p className="text-sm font-bold text-slate-700">No catalog items match your criteria.</p>
