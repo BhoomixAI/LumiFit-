@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, Bot, User, CornerDownLeft, Lightbulb } from "lucide-react";
 import { MeasurementState } from "./BodyMeasurements";
 import { SEASONAL_PALETTES } from "./SeasonalPaletteSelector";
-import { CATALOG_DATA, CatalogItem } from "@/data/catalog";
+import { CatalogItem } from "@/data/catalog";
+import { useCatalog } from "@/hooks/useCatalog";
 
 export interface ChatMessage {
   id: string;
@@ -39,6 +40,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   selectedPaletteId,
   onApplyRecommendation,
 }) => {
+  const { catalog, loading, error } = useCatalog();
   const palette = SEASONAL_PALETTES.find((p) => p.id === selectedPaletteId) || SEASONAL_PALETTES[0];
   const waistToHip = (measurements.waistIn / (measurements.hipsIn || 1)).toFixed(2);
 
@@ -86,6 +88,32 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputValue("");
     setIsTyping(true);
+
+    if (loading) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          text: "Still loading the catalog database. Please wait a moment and try again!",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }]);
+        setIsTyping(false);
+      }, 600);
+      return;
+    }
+
+    if (error) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          text: `Could not load the catalog: ${error}. Please try refreshing the page.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }]);
+        setIsTyping(false);
+      }, 600);
+      return;
+    }
 
     const lowerQuery = query.toLowerCase();
 
@@ -143,7 +171,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
     );
 
     // Score items
-    let scoredItems = CATALOG_DATA.map((item) => {
+    let scoredItems = catalog.map((item) => {
       let score = 0;
 
       // HARD CATEGORY FILTERING: Disqualify items not in requested target category!
@@ -175,7 +203,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
 
     // If zero matches under tight keywords, relax style keywords but KEEP target category & price limits
     if (scoredItems.length === 0) {
-      scoredItems = CATALOG_DATA.filter(
+      scoredItems = catalog.filter(
         (item) =>
           (targetCategory === "all" || item.category === targetCategory) &&
           (maxPrice === null || item.price <= maxPrice)

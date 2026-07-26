@@ -3,7 +3,7 @@
 import React from "react";
 import { MeasurementState } from "./BodyMeasurements";
 import { SEASONAL_PALETTES } from "./SeasonalPaletteSelector";
-import { CATALOG_DATA, CatalogItem } from "@/data/catalog";
+import { CatalogItem } from "@/data/catalog";
 import {
   Award,
   Sparkles,

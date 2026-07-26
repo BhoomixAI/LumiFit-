@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { CATALOG_DATA, CatalogItem } from "@/data/catalog";
+import { CatalogItem } from "@/data/catalog";
+import { useCatalog } from "@/hooks/useCatalog";
 import {
   Upload,
   Camera,
@@ -58,6 +59,7 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
   const [isVtoRenderComplete, setIsVtoRenderComplete] = useState(false);
   const [viewOverlayMode, setViewOverlayMode] = useState<"overlay" | "original">("overlay");
 
+  const { catalog, loading, error } = useCatalog();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Webcam Handler
@@ -628,38 +630,50 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
             </div>
 
             {/* Quick Add Catalog Grid */}
-            <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1 custom-scrollbar">
-              {CATALOG_DATA.filter(
-                (i) => quickAddCategory === "all" || i.category === quickAddCategory
-              ).map((item) => {
-                const isInTray = vtoTrayItems.some((t) => t.id === item.id);
-                return (
-                  <div
-                    key={item.id}
-                    className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between"
-                  >
-                    <img src={item.imageUrl} alt={item.name} className="w-full h-28 rounded-xl object-contain bg-white p-1 mb-2" />
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{item.name}</h4>
-                    <span className="text-[11px] font-semibold text-slate-500 mb-2">${item.price.toFixed(2)}</span>
+            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+              {loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-sm font-bold text-slate-500">Loading catalog...</p>
+                </div>
+              ) : error ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-sm font-bold text-rose-600">Failed to load catalog: {error}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {catalog.filter(
+                    (i) => quickAddCategory === "all" || i.category === quickAddCategory
+                  ).map((item) => {
+                    const isInTray = vtoTrayItems.some((t) => t.id === item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between"
+                      >
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-28 rounded-xl object-contain bg-white p-1 mb-2" />
+                        <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{item.name}</h4>
+                        <span className="text-[11px] font-semibold text-slate-500 mb-2">${item.price.toFixed(2)}</span>
 
-                    <button
-                      type="button"
-                      suppressHydrationWarning
-                      onClick={() => {
-                        if (isInTray) onRemoveFromVtoTray(item.id);
-                        else onAddToVtoTray(item);
-                      }}
-                      className={`w-full py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 ${
-                        isInTray
-                          ? "bg-[#FEF08A] text-yellow-950 border border-yellow-300"
-                          : "bg-[#90CDF4] text-white"
-                      }`}
-                    >
-                      {isInTray ? "Added ✓" : "+ Add"}
-                    </button>
-                  </div>
-                );
-              })}
+                        <button
+                          type="button"
+                          suppressHydrationWarning
+                          onClick={() => {
+                            if (isInTray) onRemoveFromVtoTray(item.id);
+                            else onAddToVtoTray(item);
+                          }}
+                          className={`w-full py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 ${
+                            isInTray
+                              ? "bg-[#FEF08A] text-yellow-950 border border-yellow-300"
+                              : "bg-[#90CDF4] text-white"
+                          }`}
+                        >
+                          {isInTray ? "Added ✓" : "+ Add"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="pt-2 border-t border-sky-100 shrink-0 flex justify-end">
