@@ -11,15 +11,17 @@ import { AIChatbot, AIRecommendationFilter } from "@/components/AIChatbot";
 import { CatalogExplorer } from "@/components/CatalogExplorer";
 import { VTOStudio } from "@/components/VTOStudio";
 import { StyleGrade } from "@/components/StyleGrade";
+import { WelcomeSplash } from "@/components/WelcomeSplash";
 import { CatalogItem } from "@/data/catalog";
 import { ArrowRight, Sparkles, ShieldCheck, Heart, RotateCcw } from "lucide-react";
 
 export default function Home() {
   // State for Active Navigation Tab
-  const [activeTab, setActiveTab] = useState<ActiveTab>("catalog");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("welcome");
 
   // Shared State for Section A (Body Measurements)
   const [measurements, setMeasurements] = useState<MeasurementState>({
+
     heightCm: 168,
     bustIn: 36,
     waistIn: 28,
@@ -102,6 +104,11 @@ export default function Home() {
           onTabChange={setActiveTab}
           vtoTrayCount={vtoTrayItems.length}
         />
+
+        {/* TAB 0: Welcome Splash Screen */}
+        {activeTab === "welcome" && (
+          <WelcomeSplash onStart={() => setActiveTab("profile")} />
+        )}
 
         {/* TAB 1: Profile Setup */}
         {activeTab === "profile" && (

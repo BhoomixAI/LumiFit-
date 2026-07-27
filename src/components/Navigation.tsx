@@ -3,7 +3,7 @@
 import React from "react";
 import { Shirt, Sparkles, MessageSquare, ShoppingBag, Award, Sliders } from "lucide-react";
 
-export type ActiveTab = "profile" | "catalog" | "vto" | "grade";
+export type ActiveTab = "welcome" | "profile" | "catalog" | "vto" | "grade";
 
 interface NavigationProps {
   activeTab: ActiveTab;
@@ -16,6 +16,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   onTabChange,
   vtoTrayCount,
 }) => {
+  if (activeTab === "welcome") return null;
+
   const tabs = [
     {
       id: "profile" as const,
