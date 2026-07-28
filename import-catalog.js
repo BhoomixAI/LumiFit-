@@ -37,4 +37,4 @@ async function importCatalog() {
   }
 }
 
-importCatalog();
+importCatalog(

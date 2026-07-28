@@ -14,6 +14,8 @@ import { StyleGrade } from "@/components/StyleGrade";
 import { WelcomeSplash } from "@/components/WelcomeSplash";
 import { CatalogItem } from "@/data/catalog";
 import { ArrowRight, Sparkles, ShieldCheck, Heart, RotateCcw } from "lucide-react";
+import { saveProfile } from "@/lib/profile";
+import { getSessionId } from "@/lib/session";
 
 export default function Home() {
   // State for Active Navigation Tab
@@ -51,13 +53,37 @@ export default function Home() {
     }));
   };
 
-  const handleSaveProfile = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsSuccessModalOpen(true);
-    }, 600);
-  };
+  const handleSaveProfile = async () => {
+  setIsSaving(true);
+
+  const sessionId = getSessionId();
+
+  const { error } = await saveProfile({
+    name: "",
+    height_cm: measurements.heightCm,
+    bust_in: measurements.bustIn,
+    waist_in: measurements.waistIn,
+    hips_in: measurements.hipsIn,
+    body_shape: "",
+    seasonal_palette: selectedPaletteId,
+    style_preference: "",
+    session_id: sessionId,
+  });
+
+  setIsSaving(false);
+
+  if (error) {
+    console.error(error);
+    alert("Failed to save profile.");
+    return;
+  }
+
+  setIsSuccessModalOpen(true);
+
+  setTimeout(() => {
+    setActiveTab("catalog");
+  }, 1200);
+};
 
   const handleReset = () => {
     setMeasurements({
@@ -140,12 +166,7 @@ export default function Home() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        handleSaveProfile();
-                        setTimeout(() => {
-                          setActiveTab("catalog");
-                        }, 1200);
-                      }}
+                      onClick={handleSaveProfile}
                       disabled={isSaving}
                       className="flex-1 sm:flex-none px-8 py-4 rounded-2xl bg-gradient-to-r from-[#90CDF4] via-[#A0C4FF] to-[#70B4F8] hover:from-[#70B4F8] hover:to-[#5096F6] text-white font-extrabold text-base shadow-xl shadow-sky-200/80 hover:shadow-sky-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2.5 group cursor-pointer disabled:opacity-70"
                     >
