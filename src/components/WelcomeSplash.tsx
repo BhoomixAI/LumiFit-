@@ -38,13 +38,64 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
   }, []);
 
   return (
-    <div className="min-h-[90vh] flex flex-col items-center justify-center relative px-4 overflow-hidden select-none">
-      {/* Background Ambient Glowing Accents */}
-      <div className="absolute top-1/3 left-1/4 w-80 h-80 rounded-full bg-[#90CDF4]/15 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-[#FEF08A]/15 blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full relative flex flex-col items-center justify-center px-4 overflow-hidden select-none bg-slate-50/30">
+      {/* 1. Fullscreen Viewport Background (Fixed inset-0 to cover the whole screen) */}
+      <div className="fixed inset-0 w-screen h-screen min-h-screen overflow-hidden z-0 pointer-events-none">
+        <img 
+          src="/background.png" 
+          alt="Studio Background Grid" 
+          className="w-full h-full object-cover opacity-25"
+        />
 
-      {/* Main Container */}
-      <div className="text-center relative flex flex-col items-center justify-center space-y-12 max-w-xl w-full">
+        {/* Premium Saturated Ambient Glowing Floating Background Blobs (Frosted Glass Aesthetic) */}
+        {/* Blob A: Rich Pastel Turquoise & Vivid Coral-Pink blending behind the central logo */}
+        <motion.div
+          animate={{
+            scale: [1, 1.12, 0.92, 1],
+            x: [0, 40, -30, 0],
+            y: [0, -30, 40, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-[20%] left-[15%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#06B6D4]/30 via-[#22D3EE]/25 to-[#F43F5E]/30 blur-[110px]"
+        />
+
+        {/* Blob B: Saturated Canary Yellow & Rich Amethyst Purple pulsing in the opposite corner */}
+        <motion.div
+          animate={{
+            scale: [1, 0.88, 1.12, 1],
+            x: [0, -40, 30, 0],
+            y: [0, 40, -30, 0],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute bottom-10 right-10 w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#FDE047]/35 via-[#FACC15]/30 to-[#A855F7]/30 blur-[130px]"
+        />
+
+        {/* Blob C: Secondary accent of deep Lavender & Mint Green to add depth */}
+        <motion.div
+          animate={{
+            scale: [1, 1.15, 0.9, 1],
+            x: [0, 25, -25, 0],
+            y: [0, 35, -20, 0],
+          }}
+          transition={{
+            duration: 22,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-br from-[#C084FC]/25 to-[#6EE7B7]/20 blur-[100px]"
+        />
+      </div>
+
+      {/* Main Content Wrapper sitting over the background */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center max-w-5xl w-full py-12">
         
         {/* Element 1: "LumiFit" Logo with Headless 'i' in Cursive Font */}
         <div className="relative inline-block">
@@ -56,7 +107,7 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
               duration: 0.7,
               ease: "easeOut"
             }}
-            className={`${cormorant.className} text-7xl sm:text-8xl font-medium tracking-wide text-slate-900 flex items-center justify-center`}
+            className={`${cormorant.className} text-8xl sm:text-9xl font-bold tracking-wide text-slate-900 flex items-center justify-center`}
           >
             <span>L</span>
             <span>u</span>
@@ -66,12 +117,12 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
             {/* The second 'i' is Dotless 'ı' with snap-in dot absolute target */}
             <span className="relative inline-flex items-end justify-center w-[0.45em]">
               ı
-              {/* Snap Target Dot */}
+              {/* Snap Target Dot - aligned horizontally with the slanted stem and lowered vertically to match the first 'i' dot */}
               <motion.span
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: showDot ? 1 : 0, scale: showDot ? 1 : 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                className="absolute w-[0.16em] h-[0.16em] bg-[#90CDF4] rounded-full shadow-[0_0_12px_#90CDF4] -top-[0.25em] left-[50%] -translate-x-[50%]"
+                className="absolute w-[0.16em] h-[0.16em] bg-[#90CDF4] rounded-full shadow-[0_0_12px_#90CDF4] top-[0.18em] left-[62%] -translate-x-[50%]"
               />
 
               {/* Orbit Flight Particle (Stage 3: At 2.5s, 3D ellipse orbit) */}
@@ -80,7 +131,7 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
                   initial={{ x: "0px", y: "30px", scale: 1.2, opacity: 1 }}
                   animate={{
                     x: ["0px", "-160px", "0px", "160px", "0px"],
-                    y: ["30px", "0px", "-45px", "0px", "-20px"],
+                    y: ["30px", "0px", "-45px", "0px", "14px"],
                     scale: [1.2, 0.7, 0.4, 1.2, 1.0],
                     opacity: [1, 0.7, 0.4, 1, 1],
                   }}
@@ -97,13 +148,14 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
         </div>
 
         {/* Element 2: Tagline text revealed by glided light streak (Stage 2: At 1.9s) */}
-        <div className="relative inline-block w-full max-w-sm overflow-visible py-1">
+        {/* Distance A (LumiFit to Tagline): mt-4 for a tight, compact gap */}
+        <div className="relative w-full max-w-4xl mx-auto px-4 text-center overflow-visible py-1 mt-4">
           {/* Masked Tagline Text */}
           <motion.p
             initial={{ clipPath: "inset(0 100% 0 0)" }}
             animate={{ clipPath: "inset(0 0% 0 0)" }}
             transition={{ delay: 1.9, duration: 0.8, ease: "easeInOut" }}
-            className="text-slate-500 font-medium text-xs sm:text-sm tracking-widest uppercase text-center whitespace-nowrap"
+            className="text-slate-500 font-bold text-xs md:text-sm tracking-wider uppercase text-center whitespace-normal md:whitespace-nowrap"
           >
             Your body, your palette, your virtual fitting room.
           </motion.p>
@@ -113,11 +165,12 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
             initial={{ left: "0%", opacity: 0 }}
             animate={{ left: "100%", opacity: [0, 1, 1, 0] }}
             transition={{ delay: 1.9, duration: 0.8, ease: "easeInOut" }}
-            className="absolute top-0 bottom-0 w-6 bg-gradient-to-r from-transparent via-[#FEF08A] to-transparent shadow-[0_0_10px_#FEF08A] pointer-events-none -translate-x-[50%]"
+            className="absolute top-0 bottom-0 w-8 bg-gradient-to-r from-transparent via-[#FEF08A] to-transparent shadow-[0_0_10px_#FEF08A] pointer-events-none -translate-x-[50%]"
           />
         </div>
 
         {/* Element 3: Primary CTA Button (Stage 4: At 4.0s) */}
+        {/* Distance B (Tagline to Button): mt-20 to make the gap significantly larger than Distance A */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -128,19 +181,18 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onStart }) => {
             stiffness: 100,
             damping: 12
           }}
-          className="pt-8"
+          className="pt-2 mt-20"
         >
           <button
             type="button"
             suppressHydrationWarning
             onClick={onStart}
-            className="px-10 py-4 rounded-2xl bg-gradient-to-r from-[#90CDF4] via-[#A0C4FF] to-[#70B4F8] hover:from-[#70B4F8] hover:to-[#5096F6] text-white font-extrabold text-xs tracking-widest uppercase shadow-lg shadow-sky-200/80 hover:shadow-sky-300 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer group"
+            className="px-14 py-5 rounded-2xl bg-gradient-to-r from-[#90CDF4] via-[#A0C4FF] to-[#70B4F8] hover:from-[#70B4F8] hover:to-[#5096F6] text-white font-extrabold text-sm sm:text-lg tracking-widest uppercase shadow-lg shadow-sky-200/80 hover:shadow-sky-300 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer group"
           >
             <span>Get Started</span>
-            <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
-
       </div>
     </div>
   );

@@ -51,6 +51,41 @@ export const StylePreviewCard: React.FC<StylePreviewCardProps> = ({
   // Calculate sizing estimate
   const sizeEstimate = bust < 34 ? "XS / S" : bust < 38 ? "M" : bust < 42 ? "L" : "XL / XXL";
 
+  // Dynamic recommendations based on identified body shape
+  let recs = {
+    item1: "Draped Trench Coats",
+    item2: "Tailored High-Waist Trousers",
+    item3: "Structured Knit Tops",
+  };
+
+  if (bodyShape.includes("Hourglass")) {
+    recs = {
+      item1: "Wrap Dresses",
+      item2: "Tailored High-Waist Trousers",
+      item3: "Structured Knit Tops",
+    };
+  } else if (bodyShape.includes("Pear")) {
+    recs = {
+      item1: "A-Line Skirts",
+      item2: "Wide-Leg Pleated Pants",
+      item3: "Structured Shoulder Tops",
+    };
+  } else if (bodyShape.includes("Inverted")) {
+    recs = {
+      item1: "V-Neck Blouses",
+      item2: "Flared Denim Jeans",
+      item3: "Dolman Sleeve Sweaters",
+    };
+  } else if (bodyShape.includes("Rectangle")) {
+    recs = {
+      item1: "Belted A-Line Dresses",
+      item2: "Cargo Joggers",
+      item3: "Ruffled Neck Tops",
+    };
+  }
+
+  const whr = (waist / (hips || 1)).toFixed(2);
+
   return (
     <div className="bg-white/90 backdrop-blur-md border border-sky-100/60 rounded-3xl p-6 shadow-xl shadow-sky-100/50 space-y-6 sticky top-6">
       {/* Top AI Status */}
@@ -128,19 +163,19 @@ export const StylePreviewCard: React.FC<StylePreviewCardProps> = ({
           <li className="flex items-start gap-2.5 text-slate-700 bg-slate-50/80 p-3 rounded-2xl border border-sky-100/80 font-medium">
             <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-slate-900">Draped Trench Coats</strong> in <span style={{ color: palette.swatches[1] }} className="font-extrabold">{palette.swatches[1]}</span>
+              <strong className="text-slate-900">{recs.item1}</strong> in <span style={{ color: palette.swatches[1] }} className="font-extrabold">{palette.swatches[1]}</span>
             </span>
           </li>
           <li className="flex items-start gap-2.5 text-slate-700 bg-slate-50/80 p-3 rounded-2xl border border-sky-100/80 font-medium">
             <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-slate-900">Tailored High-Waist Trousers</strong> emphasizing waist ratio ({(waist / (hips || 1)).toFixed(2)})
+              <strong className="text-slate-900">{recs.item2}</strong> emphasizing waist ratio ({whr})
             </span>
           </li>
           <li className="flex items-start gap-2.5 text-slate-700 bg-slate-50/80 p-3 rounded-2xl border border-sky-100/80 font-medium">
             <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-slate-900">Structured Knit Tops</strong> optimized for {height} cm stature frame
+              <strong className="text-slate-900">{recs.item3}</strong> optimized for {height} cm stature frame
             </span>
           </li>
         </ul>

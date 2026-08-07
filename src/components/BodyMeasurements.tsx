@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Ruler, Maximize2, Activity, Sparkles } from "lucide-react";
 
 export interface MeasurementState {
@@ -31,7 +31,7 @@ export const BodyMeasurements: React.FC<BodyMeasurementsProps> = ({
       key: "heightCm" as const,
       label: "Height",
       unit: "cm",
-      min: 120,
+      min: 100,
       max: 220,
       step: 1,
       icon: Ruler,
@@ -69,10 +69,46 @@ export const BodyMeasurements: React.FC<BodyMeasurementsProps> = ({
     },
   ];
 
-  const handleInputChange = (key: keyof MeasurementState, rawValue: string, min: number, max: number) => {
-    const parsed = parseFloat(rawValue);
-    if (isNaN(parsed)) return;
+  // Local state for free typing before clamp on blur
+  const [localValues, setLocalValues] = useState<Record<keyof MeasurementState, string>>({
+    heightCm: measurements.heightCm.toString(),
+    bustIn: measurements.bustIn.toString(),
+    waistIn: measurements.waistIn.toString(),
+    hipsIn: measurements.hipsIn.toString(),
+  });
+
+  useEffect(() => {
+    setLocalValues({
+      heightCm: measurements.heightCm.toString(),
+      bustIn: measurements.bustIn.toString(),
+      waistIn: measurements.waistIn.toString(),
+      hipsIn: measurements.hipsIn.toString(),
+    });
+  }, [measurements]);
+
+  const handleStep = (key: keyof MeasurementState, step: number, min: number, max: number) => {
+    const current = measurements[key];
+    const nextVal = Math.min(Math.max(current + step, min), max);
+    onChange(key, nextVal);
+  };
+
+  const handleTyping = (key: keyof MeasurementState, val: string) => {
+    setLocalValues((prev) => ({ ...prev, [key]: val }));
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed)) {
+      // Direct live update if it's within range
+      onChange(key, parsed);
+    }
+  };
+
+  const handleBlur = (key: keyof MeasurementState, min: number, max: number) => {
+    const val = localValues[key];
+    let parsed = parseFloat(val);
+    if (isNaN(parsed)) {
+      parsed = min;
+    }
     const clamped = Math.min(Math.max(parsed, min), max);
+    setLocalValues((prev) => ({ ...prev, [key]: clamped.toString() }));
     onChange(key, clamped);
   };
 
@@ -88,7 +124,7 @@ export const BodyMeasurements: React.FC<BodyMeasurementsProps> = ({
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Body Measurements</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            Adjust sliders or enter numbers directly to refine your fit recommendations.
+            Enter values directly or click the increment controls to adjust your fit details.
           </p>
         </div>
 
@@ -125,53 +161,56 @@ export const BodyMeasurements: React.FC<BodyMeasurementsProps> = ({
         </div>
       </div>
 
-      {/* Sliders Grid */}
+      {/* Inputs List */}
       <div className="space-y-6 pt-2">
         {fields.map((field) => {
           const Icon = field.icon;
-          const val = measurements[field.key];
           return (
-            <div key={field.key} className="space-y-2 group">
-              {/* Label + Active Numerical Value Display */}
-              <div className="flex items-center justify-between">
+            <div key={field.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#FDFBF7]/40 border border-sky-100/30 hover:border-sky-100 transition-all duration-300 group">
+              {/* Label Info */}
+              <div className="space-y-1">
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-800 group-hover:text-sky-600 transition-colors">
                   <div className="w-7 h-7 rounded-xl bg-sky-50 flex items-center justify-center">
                     <Icon className="w-4 h-4 text-[#90CDF4]" />
                   </div>
                   <span>{field.label}</span>
                 </label>
-                <div className="flex items-center gap-1.5 bg-sky-50/80 px-3 py-1.5 rounded-2xl border border-sky-200 text-sm font-extrabold text-sky-700 shadow-xs">
-                  <input
-                    type="number"
-                    value={val}
-                    step={field.step}
-                    min={field.min}
-                    max={field.max}
-                    onChange={(e) => handleInputChange(field.key, e.target.value, field.min, field.max)}
-                    className="w-12 bg-transparent text-right focus:outline-none text-sky-800 font-black focus:bg-white rounded px-1 transition-colors"
-                  />
-                  <span className="text-slate-500 text-xs font-semibold">{field.unit}</span>
-                </div>
+                <p className="text-[11px] text-slate-400 font-medium pl-9">
+                  {field.description} (Min: {field.min} / Max: {field.max})
+                </p>
               </div>
 
-              {/* Slider Control */}
-              <div className="relative pt-1">
-                <input
-                  type="range"
-                  min={field.min}
-                  max={field.max}
-                  step={field.step}
-                  value={val}
-                  onChange={(e) => onChange(field.key, parseFloat(e.target.value))}
-                  className="w-full"
-                  aria-label={field.label}
-                />
-                {/* Min / Max bounds indicator */}
-                <div className="flex justify-between text-[11px] text-slate-400 mt-1.5 font-medium">
-                  <span>{field.min} {field.unit}</span>
-                  <span className="text-slate-500">{field.description}</span>
-                  <span>{field.max} {field.unit}</span>
+              {/* Step Controls (Decrement, Direct Input, Increment) */}
+              <div className="flex items-center gap-3 pl-9 sm:pl-0">
+                <div className="flex items-center border border-sky-100 bg-white rounded-2xl overflow-hidden shadow-2xs focus-within:ring-2 focus-within:ring-[#90CDF4]/50 focus-within:border-[#90CDF4] transition-all">
+                  {/* Decrement Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleStep(field.key, -field.step, field.min, field.max)}
+                    className="w-11 h-11 flex items-center justify-center font-bold text-lg text-sky-600 hover:bg-sky-50 active:bg-sky-100/50 transition-colors border-r border-sky-100 cursor-pointer select-none"
+                  >
+                    &minus;
+                  </button>
+
+                  {/* Direct typing Number Input */}
+                  <input
+                    type="number"
+                    value={localValues[field.key]}
+                    onChange={(e) => handleTyping(field.key, e.target.value)}
+                    onBlur={() => handleBlur(field.key, field.min, field.max)}
+                    className="w-16 h-11 bg-white text-center text-slate-800 font-extrabold text-base focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+
+                  {/* Increment Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleStep(field.key, field.step, field.min, field.max)}
+                    className="w-11 h-11 flex items-center justify-center font-bold text-lg text-sky-600 hover:bg-sky-50 active:bg-sky-100/50 transition-colors border-l border-sky-100 cursor-pointer select-none"
+                  >
+                    &#43;
+                  </button>
                 </div>
+                <span className="text-slate-500 font-bold text-sm min-w-[20px]">{field.unit}</span>
               </div>
             </div>
           );

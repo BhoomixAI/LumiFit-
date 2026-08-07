@@ -45,7 +45,7 @@ export const StyleGrade: React.FC<StyleGradeProps> = ({
 
   // 1. DYNAMIC COLOR HARMONY SCORE CALCULATION
   let colorHarmonyScore = 88;
-  const isWarmPalette = selectedPaletteId === "warm-autumn" || selectedPaletteId === "spring-radiance";
+  const isWarmPalette = palette.category === "spring" || palette.category === "autumn";
 
   if (vtoTrayItems.length > 0) {
     let warmMatchCount = 0;
