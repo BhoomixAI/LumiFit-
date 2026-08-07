@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigation, ActiveTab } from "@/components/Navigation";
 import { Header } from "@/components/Header";
 import { BodyMeasurements, MeasurementState } from "@/components/BodyMeasurements";
@@ -14,8 +14,9 @@ import { StyleGrade } from "@/components/StyleGrade";
 import { WelcomeSplash } from "@/components/WelcomeSplash";
 import { CatalogItem } from "@/data/catalog";
 import { ArrowRight, Sparkles, ShieldCheck, Heart, RotateCcw } from "lucide-react";
-import { saveProfile } from "@/lib/profile";
+import { saveProfile, getProfile } from "@/lib/profile";
 import { getSessionId } from "@/lib/session";
+import { calculateBodyShape } from "@/lib/bodyShape";
 
 export default function Home() {
   // State for Active Navigation Tab
@@ -46,6 +47,31 @@ export default function Home() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Load existing profile for this session on mount
+  useEffect(() => {
+    const sessionId = getSessionId();
+
+    getProfile(sessionId).then(({ data, error }) => {
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data) {
+        setMeasurements({
+          heightCm: data.height_cm ?? 168,
+          bustIn: data.bust_in ?? 36,
+          waistIn: data.waist_in ?? 28,
+          hipsIn: data.hips_in ?? 38,
+        });
+
+        if (data.seasonal_palette) {
+          setSelectedPaletteId(data.seasonal_palette);
+        }
+      }
+    });
+  }, []);
+
   const handleMeasurementChange = (key: keyof MeasurementState, val: number) => {
     setMeasurements((prev) => ({
       ...prev,
@@ -64,7 +90,7 @@ export default function Home() {
     bust_in: measurements.bustIn,
     waist_in: measurements.waistIn,
     hips_in: measurements.hipsIn,
-    body_shape: "",
+    body_shape: calculateBodyShape(measurements),
     seasonal_palette: selectedPaletteId,
     style_preference: "",
     session_id: sessionId,

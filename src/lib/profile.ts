@@ -18,7 +18,7 @@ export async function saveProfile(profile: {
     });
 }
 
-export async function loadProfile(session_id: string) {
+export async function getProfile(session_id: string) {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
