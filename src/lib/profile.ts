@@ -23,7 +23,7 @@ export async function getProfile(session_id: string) {
     .from("profiles")
     .select("*")
     .eq("session_id", session_id)
-    .single();
+    .maybeSingle();
 
   return { data, error };
 }

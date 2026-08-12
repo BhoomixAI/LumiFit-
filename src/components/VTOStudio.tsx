@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { CatalogItem } from "@/data/catalog";
 import { useCatalog } from "@/hooks/useCatalog";
+import { VtoStartResponse, VtoPollResponse } from "@/lib/youcam";
 import {
   Upload,
   Camera,
@@ -35,6 +36,11 @@ const SAMPLE_MODELS = [
   { id: "model-2", name: "Studio Model B", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" },
 ];
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const VTO_TIMEOUT_MS = 180_000;
+const VTO_POLL_MS = 3000;
+
 export const VTOStudio: React.FC<VTOStudioProps> = ({
   vtoTrayItems,
   onAddToVtoTray,
@@ -58,6 +64,10 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
   const [generationStage, setGenerationStage] = useState("");
   const [isVtoRenderComplete, setIsVtoRenderComplete] = useState(false);
   const [viewOverlayMode, setViewOverlayMode] = useState<"overlay" | "original">("overlay");
+  const [vtoResultUrl, setVtoResultUrl] = useState<string | null>(null);
+  const [isFallbackRender, setIsFallbackRender] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const { catalog, loading, error } = useCatalog();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -89,6 +99,14 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
     };
   }, [photoMode, isWebcamActive]);
 
+  const resetVtoResult = () => {
+    setVtoResultUrl(null);
+    setIsFallbackRender(false);
+    setGenerationError(null);
+    setIsVtoRenderComplete(false);
+    setIsRetrying(false);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -96,7 +114,7 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
       reader.onload = (event) => {
         if (event.target?.result) {
           setUserPhoto(event.target.result as string);
-          setIsVtoRenderComplete(false);
+          resetVtoResult();
         }
       };
       reader.readAsDataURL(file);
@@ -115,42 +133,157 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
         setUserPhoto(dataUrl);
         setIsWebcamActive(false);
         setPhotoMode("upload");
-        setIsVtoRenderComplete(false);
+        resetVtoResult();
       }
     } else {
       setUserPhoto(SAMPLE_MODELS[1].url);
       setIsWebcamActive(false);
       setPhotoMode("upload");
-      setIsVtoRenderComplete(false);
+      resetVtoResult();
     }
   };
 
-  const handleStartGeneration = () => {
+  const getGenerationErrorMessage = (err: unknown, fallback: string): string => {
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
+  const handleStartGeneration = async (): Promise<void> => {
     if (vtoTrayItems.length === 0) {
       alert("Please add at least 1 apparel or jewelry item to your VTO Tray before generating!");
       return;
     }
 
+    if (!userPhoto) {
+      alert("Please upload or capture a photo before generating!");
+      return;
+    }
+
+    const garmentItem = topOrDressItem ?? apparelTrayItems[0];
+    if (!garmentItem) {
+      alert("Please add an apparel item (top, bottom, or dress) to your VTO Tray to act as the garment!");
+      return;
+    }
+    if (!garmentItem.imageUrl) {
+      alert("The selected garment is missing an image. Please pick another item.");
+      return;
+    }
+
+    setIsRetrying(true);
     setIsGenerating(true);
-    setGenerationProgress(15);
-    setGenerationStage("Aligning 3D Body Mesh & Anchor Points...");
+    setGenerationError(null);
+    setIsFallbackRender(false);
+    setIsVtoRenderComplete(false);
+    setGenerationProgress(10);
+    setGenerationStage("Preparing photo & uploading to YouCam AI Clothes...");
 
-    setTimeout(() => {
-      setGenerationProgress(55);
-      setGenerationStage("Stitching your outfit with YouCam AI...");
-    }, 700);
+    try {
+      const startRes = await fetch("/api/youcam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          srcImageDataUrl: userPhoto,
+          garmentImageUrl: garmentItem.imageUrl,
+          garmentName: garmentItem.name,
+        }),
+      });
+      const startData = (await startRes.json()) as VtoStartResponse;
 
-    setTimeout(() => {
-      setGenerationProgress(88);
-      setGenerationStage("Optimizing lighting, drape tension & color harmony...");
-    }, 1400);
+      if (!startData.ok || !startData.taskId) {
+        const errCode = startData.error?.code ?? "server";
+        const stageFallback =
+          errCode === "auth"
+            ? `YouCam API authentication failed (${errCode}). Check server-side YOUCAM_API_KEY.`
+            : errCode === "rate-limit"
+              ? `YouCam API rate limit reached (${errCode}). Please wait and try again later.`
+              : errCode === "upload"
+                ? `YouCam image upload failed (${errCode}). Try a smaller or different photo / garment image.`
+                : startData.error?.message ?? "Could not reach the YouCam AI Clothes API.";
+        throw new Error(stageFallback);
+      }
 
-    setTimeout(() => {
-      setGenerationProgress(100);
-      setIsGenerating(false);
+      const taskId = startData.taskId;
+      setGenerationProgress(30);
+      setGenerationStage("YouCam task created — uploading garment & stitching your outfit...");
+
+      const deadline = Date.now() + VTO_TIMEOUT_MS;
+      let resultUrl: string | null = null;
+      let taskError: string | null = null;
+      let elapsedSeconds = 0;
+
+      while (Date.now() < deadline) {
+        await sleep(VTO_POLL_MS);
+
+        const pollRes = await fetch(`/api/youcam?taskId=${encodeURIComponent(taskId)}`, {
+          cache: "no-store",
+        });
+        const pollData = (await pollRes.json()) as VtoPollResponse;
+
+        if (!pollData.ok) {
+          const errCode = pollData.error?.code ?? "server";
+          const codeFallback =
+            errCode === "auth"
+              ? `YouCam API authentication failed (${errCode}). Check server-side YOUCAM_API_KEY.`
+              : errCode === "rate-limit"
+                ? `YouCam API rate limit reached (${errCode}). Please wait and try again later.`
+                : pollData.error?.message ?? "Could not check the YouCam task status.";
+          throw new Error(codeFallback);
+        }
+
+        if (pollData.taskStatus === "success") {
+          setGenerationProgress(95);
+          if (pollData.resultUrl) {
+            resultUrl = pollData.resultUrl;
+            break;
+          }
+          taskError = "YouCam completed the task but did not return a result image.";
+          break;
+        }
+
+        if (pollData.taskStatus === "error") {
+          taskError = pollData.error?.message ?? "YouCam AI task failed to render.";
+          break;
+        }
+
+        elapsedSeconds = Math.round((VTO_TIMEOUT_MS - (deadline - Date.now())) / 1000);
+        setGenerationProgress(Math.min(90, 50 + Math.round((elapsedSeconds / (VTO_TIMEOUT_MS / 1000)) * 40)));
+        setGenerationStage(
+          `YouCam AI Neural Render in progress — polling engine (${elapsedSeconds}s elapsed)...`
+        );
+      }
+
+      if (!resultUrl) {
+        taskError = taskError ?? `YouCam AI task timed out after ${VTO_TIMEOUT_MS / 1000}s. Please try again.`;
+      }
+
+      if (resultUrl) {
+        setVtoResultUrl(resultUrl);
+        setIsFallbackRender(false);
+        setIsVtoRenderComplete(true);
+        setViewOverlayMode("overlay");
+        setGenerationProgress(100);
+        setGenerationStage("YouCam AI render complete — photorealistic result ready!");
+      } else {
+        setGenerationError(taskError);
+        setIsFallbackRender(true);
+        setIsVtoRenderComplete(true);
+        setViewOverlayMode("overlay");
+        alert(taskError);
+      }
+    } catch (err) {
+      const message = getGenerationErrorMessage(
+        err,
+        "YouCam AI Clothes API is unreachable. Showing a preview overlay instead."
+      );
+      setGenerationError(message);
+      setIsFallbackRender(true);
       setIsVtoRenderComplete(true);
       setViewOverlayMode("overlay");
-    }, 2000);
+      alert(message);
+    } finally {
+      setIsGenerating(false);
+      setIsRetrying(false);
+    }
   };
 
   // Group Tray items by category
@@ -271,57 +404,81 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
                       className="w-full h-full object-contain object-top"
                     />
 
-                    {/* VTO OVERLAY LAYER (Renders staged apparel & jewelry directly on top of person with object-contain) */}
-                    {isVtoRenderComplete && viewOverlayMode === "overlay" && (
-                      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-between p-4">
-                        {/* Upper Body / Top / Dress Overlay */}
-                        {topOrDressItem && (
-                          <div className="absolute top-[16%] w-[70%] sm:w-[64%] h-[44%] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 animate-in fade-in zoom-in-95 duration-500 bg-white/20 backdrop-blur-xs flex items-center justify-center p-1">
-                            <img
-                              src={topOrDressItem.imageUrl}
-                              alt={topOrDressItem.name}
-                              className="w-full h-full object-contain opacity-95 filter contrast-105 drop-shadow-md"
-                            />
-                            <span className="absolute bottom-1.5 left-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-900/90 text-white shadow-xs">
-                              {topOrDressItem.name}
-                            </span>
+                    {/* REAL YouCam AI RESULT (server-generated photorealistic try-on) */}
+                    {isVtoRenderComplete &&
+                      viewOverlayMode === "overlay" &&
+                      vtoResultUrl &&
+                      !isFallbackRender && (
+                        <>
+                          <img
+                            src={vtoResultUrl}
+                            alt="YouCam AI Virtual Try-On Result"
+                            className="w-full h-full object-contain object-top animate-in fade-in duration-500"
+                          />
+                          <div className="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur-md text-white font-extrabold text-[10px] px-3 py-1 rounded-full border border-emerald-300 shadow-md">
+                            ✓ Real YouCam AI Result
                           </div>
-                        )}
+                        </>
+                      )}
 
-                        {/* Lower Body / Bottom Overlay */}
-                        {bottomItem && !topOrDressItem?.name.includes("Dress") && (
-                          <div className="absolute bottom-[6%] w-[68%] sm:w-[60%] h-[42%] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 animate-in fade-in zoom-in-95 duration-500 bg-white/20 backdrop-blur-xs flex items-center justify-center p-1">
-                            <img
-                              src={bottomItem.imageUrl}
-                              alt={bottomItem.name}
-                              className="w-full h-full object-contain opacity-95 filter contrast-105 drop-shadow-md"
-                            />
-                            <span className="absolute bottom-1.5 left-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-900/90 text-white shadow-xs">
-                              {bottomItem.name}
-                            </span>
+                    {/* FALLBACK Overlay Layer (ONLY used when the real YouCam API fails) */}
+                    {isVtoRenderComplete &&
+                      viewOverlayMode === "overlay" &&
+                      isFallbackRender && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-between p-4">
+                          {/* Fallback Mode Badge — clearly distinguishes from real YouCam results */}
+                          <div className="absolute top-3 left-3 bg-rose-600/90 backdrop-blur-md text-white font-extrabold text-[10px] px-3 py-1 rounded-full border border-rose-300 shadow-md z-10">
+                            ⚠ Fallback Preview — YouCam API unavailable
                           </div>
-                        )}
 
-                        {/* Jewelry Neckline Overlay */}
-                        {jewelryItem && (
-                          <div className="absolute top-[12%] w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-300 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 bg-white/60 backdrop-blur-xs flex items-center justify-center p-1">
-                            <img
-                              src={jewelryItem.imageUrl}
-                              alt={jewelryItem.name}
-                              className="w-full h-full object-contain opacity-95 filter drop-shadow-md"
-                            />
+                          {/* Upper Body / Top / Dress Overlay */}
+                          {topOrDressItem && (
+                            <div className="absolute top-[16%] w-[70%] sm:w-[64%] h-[44%] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 animate-in fade-in zoom-in-95 duration-500 bg-white/20 backdrop-blur-xs flex items-center justify-center p-1">
+                              <img
+                                src={topOrDressItem.imageUrl}
+                                alt={topOrDressItem.name}
+                                className="w-full h-full object-contain opacity-95 filter contrast-105 drop-shadow-md"
+                              />
+                              <span className="absolute bottom-1.5 left-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-900/90 text-white shadow-xs">
+                                {topOrDressItem.name}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Lower Body / Bottom Overlay */}
+                          {bottomItem && !topOrDressItem?.name.includes("Dress") && (
+                            <div className="absolute bottom-[6%] w-[68%] sm:w-[60%] h-[42%] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 animate-in fade-in zoom-in-95 duration-500 bg-white/20 backdrop-blur-xs flex items-center justify-center p-1">
+                              <img
+                                src={bottomItem.imageUrl}
+                                alt={bottomItem.name}
+                                className="w-full h-full object-contain opacity-95 filter contrast-105 drop-shadow-md"
+                              />
+                              <span className="absolute bottom-1.5 left-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-900/90 text-white shadow-xs">
+                                {bottomItem.name}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Jewelry Neckline Overlay */}
+                          {jewelryItem && (
+                            <div className="absolute top-[12%] w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-300 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 bg-white/60 backdrop-blur-xs flex items-center justify-center p-1">
+                              <img
+                                src={jewelryItem.imageUrl}
+                                alt={jewelryItem.name}
+                                className="w-full h-full object-contain opacity-95 filter drop-shadow-md"
+                              />
+                            </div>
+                          )}
+
+                          {/* Drape & Tension AI Fit Tags */}
+                          <div className="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md text-white font-extrabold text-[10px] px-3 py-1 rounded-full border border-sky-300/40 shadow-md">
+                            Chest &amp; Shoulder Fit: Seamless ✓
                           </div>
-                        )}
-
-                        {/* Drape & Tension AI Fit Tags */}
-                        <div className="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md text-white font-extrabold text-[10px] px-3 py-1 rounded-full border border-sky-300/40 shadow-md">
-                          Chest &amp; Shoulder Fit: Seamless ✓
+                          <div className="absolute bottom-3 right-3 bg-[#FEF08A] text-yellow-950 font-black text-[10px] px-3 py-1 rounded-full border border-yellow-300 shadow-md">
+                            YouCam 3D Mesh Stitched ✨
+                          </div>
                         </div>
-                        <div className="absolute bottom-3 right-3 bg-[#FEF08A] text-yellow-950 font-black text-[10px] px-3 py-1 rounded-full border border-yellow-300 shadow-md">
-                          YouCam 3D Mesh Stitched ✨
-                        </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Change Photo Overlay Hover */}
                     {!isVtoRenderComplete && (
@@ -355,6 +512,35 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
                 )}
               </div>
 
+              {/* Fallback Mode Notice — shown only when real YouCam API failed, clearly distinguished from real results */}
+              {isVtoRenderComplete && isFallbackRender && (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 p-3 rounded-2xl bg-rose-50 border border-rose-200">
+                    <div className="w-6 h-6 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                      ⚠
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-rose-800">
+                        Fallback Preview — YouCam AI API was unavailable
+                      </p>
+                      <p className="text-rose-700 font-medium mt-0.5">
+                        {generationError ?? "The real YouCam AI Clothes engine could not be reached, so a local preview overlay is shown instead."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    suppressHydrationWarning
+                    onClick={handleStartGeneration}
+                    disabled={isGenerating || isRetrying}
+                    className="w-full py-3 rounded-2xl bg-slate-900 text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
+                    Retry with Real YouCam AI
+                  </button>
+                </div>
+              )}
+
               {/* Sample Model Quick Select Presets */}
               {!isVtoRenderComplete && (
                 <div className="space-y-2">
@@ -369,7 +555,7 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
                         suppressHydrationWarning
                         onClick={() => {
                           setUserPhoto(model.url);
-                          setIsVtoRenderComplete(false);
+                          resetVtoResult();
                         }}
                         className={`flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                           userPhoto === model.url
@@ -578,7 +764,7 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
               type="button"
               suppressHydrationWarning
               onClick={handleStartGeneration}
-              disabled={vtoTrayItems.length === 0}
+              disabled={vtoTrayItems.length === 0 || isGenerating || isRetrying}
               className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#90CDF4] via-[#A0C4FF] to-[#70B4F8] hover:from-[#70B4F8] hover:to-[#5096F6] text-white font-black text-base shadow-xl shadow-sky-200/80 hover:shadow-sky-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Wand2 className="w-5 h-5 text-white animate-spin-slow" />
@@ -709,19 +895,37 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
                 Stitching your outfit with YouCam AI...
               </h3>
               <p className="text-xs text-slate-500 font-medium">{generationStage}</p>
+              {generationError && (
+                <p className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                  {generationError}
+                </p>
+              )}
             </div>
 
             {/* Progress Bar */}
             <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
               <div
                 className="bg-gradient-to-r from-[#90CDF4] via-[#A0C4FF] to-[#70B4F8] h-full transition-all duration-500 rounded-full"
-                style={{ width: `${generationProgress}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, generationProgress))}%` }}
               />
             </div>
 
             <span className="text-xs font-mono font-bold text-sky-800">
-              {generationProgress}% Complete
+              {Math.min(100, Math.max(0, generationProgress))}% Complete
             </span>
+
+            {generationError && (
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => {
+                  setIsGenerating(false);
+                }}
+                className="w-full py-3 rounded-2xl bg-slate-900 text-white text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            )}
           </div>
         </div>
       )}

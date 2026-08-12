@@ -53,7 +53,10 @@ export default function Home() {
 
     getProfile(sessionId).then(({ data, error }) => {
       if (error) {
-        console.error(error);
+        console.error(
+          "[getProfile] failed:",
+JSON.stringify({ message: error.message, hint: error.hint, details: error.details, code: error.code }, null, 2)
+        );
         return;
       }
 
@@ -99,7 +102,10 @@ export default function Home() {
   setIsSaving(false);
 
   if (error) {
-    console.error(error);
+    console.error(
+      "[saveProfile] failed:",
+      JSON.stringify({ message: error.message, hint: error.hint, details: error.details, code: error.code }, null, 2)
+    );
     alert("Failed to save profile.");
     return;
   }
