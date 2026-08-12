@@ -4,7 +4,14 @@ const path = require('path');
 
 // Direct configuration
 const supabaseUrl = 'https://ikudmmqnrsyoejfmmsyu.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrdWRtbXFucnN5b2VqZm1tc3l1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgxODc3NSwiZXhwIjoyMTAwMzk0Nzc1fQ.gvuwhs0bU_c6BFJz5k44ObLFm3ctbiPltXMfNcN8s5c'; // Replace this with your actual long service_role secret key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseKey) {
+  console.error(
+    'Supabase service_role key is missing. Set the SUPABASE_SERVICE_ROLE_KEY environment variable before running this script.'
+  );
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
