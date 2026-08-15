@@ -38,6 +38,46 @@ const SAMPLE_MODELS = [
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const readFileAsDataUrl = (file: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Could not read the selected photo."));
+    reader.readAsDataURL(file);
+  });
+
+const toImageDataUrl = async (
+  input: string | File | Blob | null | undefined
+): Promise<string> => {
+  let result: string;
+
+  if (typeof input !== "string") {
+    if (!(input instanceof Blob)) {
+      throw new Error("Please upload or capture a photo before generating!");
+    }
+    result = await readFileAsDataUrl(input);
+  } else if (input.startsWith("data:image/")) {
+    result = input;
+  } else if (input.startsWith("blob:") || input.startsWith("http://") || input.startsWith("https://")) {
+    const res = await fetch(input);
+    if (!res.ok) {
+      throw new Error("Could not load the selected photo for YouCam AI.");
+    }
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error("The selected photo is not a valid image.");
+    }
+    result = await readFileAsDataUrl(blob);
+  } else {
+    throw new Error("The selected photo is not a valid image.");
+  }
+
+  if (!result.startsWith("data:image/")) {
+    throw new Error("The selected photo is not a valid image.");
+  }
+  return result;
+};
+
 const VTO_TIMEOUT_MS = 180_000;
 const VTO_POLL_MS = 3000;
 
@@ -178,11 +218,13 @@ export const VTOStudio: React.FC<VTOStudioProps> = ({
     setGenerationStage("Preparing photo & uploading to YouCam AI Clothes...");
 
     try {
+      const srcImageDataUrl = await toImageDataUrl(userPhoto);
+
       const startRes = await fetch("/api/youcam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          srcImageDataUrl: userPhoto,
+          srcImageDataUrl,
           garmentImageUrl: garmentItem.imageUrl,
           garmentName: garmentItem.name,
         }),
