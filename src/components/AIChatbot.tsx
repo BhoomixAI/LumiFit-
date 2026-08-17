@@ -7,6 +7,31 @@ import { SEASONAL_PALETTES } from "./SeasonalPaletteSelector";
 import { CatalogItem } from "@/data/catalog";
 import { useCatalog } from "@/hooks/useCatalog";
 
+// API request/response types (separate from UI ChatMessage)
+interface AIChatbotAPIMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface AIChatbotAPIPayload {
+  message?: string;
+  image_data_url?: string | null;
+  user_profile?: {
+    seasonal_palette?: string;
+    measurements?: MeasurementState;
+    body_shape?: string;
+    style_preference?: string;
+  } | null;
+  conversation_history?: AIChatbotAPIMessage[];
+}
+
+interface AIChatbotAPIResponse {
+  ok: boolean;
+  response_text: string;
+  recommended_item_ids: string[];
+  error?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: "ai" | "user";
@@ -26,6 +51,12 @@ interface AIChatbotProps {
   measurements: MeasurementState;
   selectedPaletteId: string;
   onApplyRecommendation: (filter: AIRecommendationFilter) => void;
+  userProfile?: {
+    seasonal_palette?: string;
+    measurements: MeasurementState;
+    body_shape?: string;
+    style_preference?: string;
+  };
 }
 
 const INITIAL_SUGGESTIONS = [
@@ -39,10 +70,26 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   measurements,
   selectedPaletteId,
   onApplyRecommendation,
+  userProfile,
 }) => {
   const { catalog, loading, error } = useCatalog();
   const palette = SEASONAL_PALETTES.find((p) => p.id === selectedPaletteId) || SEASONAL_PALETTES[0];
   const waistToHip = (measurements.waistIn / (measurements.hipsIn || 1)).toFixed(2);
+
+  // Build user_profile for API from props (no Supabase lookup)
+  const user_profile = userProfile
+    ? {
+        seasonal_palette: userProfile.seasonal_palette || selectedPaletteId,
+        measurements: userProfile.measurements || measurements,
+        body_shape: userProfile.body_shape,
+        style_preference: userProfile.style_preference,
+      }
+    : {
+        seasonal_palette: selectedPaletteId,
+        measurements,
+        body_shape: "",
+        style_preference: "",
+      };
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -54,6 +101,10 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  // API-specific conversation history (separate from UI messages)
+  const [conversationHistory, setConversationHistory] = useState<AIChatbotAPIMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +116,174 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Image upload: read file as data URL, validate type and size
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate image type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (JPG, PNG, WebP).");
+      return;
+    }
+
+    // Client-side size limit: 5MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert(`Image is too large (${((file.size / 1024 / 1024) * 100).toFixed(1)}MB). Maximum 5MB.`);
+      return;
+    }
+
+    setIsImageUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (typeof result === "string") {
+        // Optional: further compress/resize could happen here
+        setImageDataUrl(result);
+      }
+      setIsImageUploading(false);
+    };
+    reader.onerror = () => {
+      alert("Could not read the selected image.");
+      setIsImageUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImageDataUrl(null);
+    // Reset file input value
+    // Note: we can't directly reset the hidden input, but clearing state is enough
+  };
+
+  const addToConversationHistory = (role: "user" | "assistant", content: string) => {
+    const newEntry: AIChatbotAPIMessage = { role, content };
+    setConversationHistory((prev) => {
+      const updated = [...prev, newEntry];
+      // Keep only latest 6 messages/turns
+      return updated.slice(-6);
+    });
+  };
+
+  const sendToAPI = async (payload: AIChatbotAPIPayload) => {
+    setIsTyping(true);
+    setIsImageUploading(false);
+
+    try {
+      const response = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as AIChatbotAPIResponse;
+
+      if (!response.ok || !data.ok) {
+        const errorMsg = data.error || "Failed to communicate with AI service.";
+        throw new Error(errorMsg);
+      }
+
+      // On success:
+      // 1. Display response_text as AI message
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        text: data.response_text,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+
+      // 2. Call onApplyRecommendation with recommended item IDs
+      if (data.recommended_item_ids && data.recommended_item_ids.length > 0) {
+        onApplyRecommendation({
+          recommendedIds: data.recommended_item_ids,
+        });
+      }
+
+      // 3. Update API conversation history
+      // We add user message and AI response to history
+      // The payload already includes the user message; we add the AI response here
+      const assistantContent = data.response_text;
+      if (assistantContent) {
+        setConversationHistory((prev) => {
+          const updated = [
+            ...prev,
+            { role: "assistant" as const, content: assistantContent },
+          ].slice(-6); // keep last 6
+          return updated;
+        });
+      }
+
+      // 4. Clear the image after successful send
+      setImageDataUrl(null);
+      return true;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to communicate with AI service. Please try again.";
+
+      // Display friendly error message
+      const errorAiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        text: `Sorry, I couldn't process your request. ${errorMessage}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, errorAiMsg]);
+
+      // Still update conversation history with the error attempt
+      setConversationHistory((prev) => {
+        const updated = [
+          ...prev,
+          { role: "assistant" as const, content: `Error: ${errorMessage}` },
+        ].slice(-6);
+        return updated;
+      });
+
+      return false;
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleSendMessage = (textToSend?: string) => {
+    // If image is present, send image + text; otherwise send text only
+    if (imageDataUrl) {
+      // Image mode: send both image and text message
+      const query = (textToSend || inputValue).trim();
+      if (!query && !imageDataUrl) return;
+
+      const payload: AIChatbotAPIPayload = {
+        message: query || "",
+        image_data_url: imageDataUrl,
+        user_profile: user_profile,
+        conversation_history: conversationHistory,
+      };
+
+      sendToAPI(payload);
+    } else {
+      // Text-only mode: send message without image
+      const query = (textToSend || inputValue).trim();
+      if (!query) return;
+
+      const payload: AIChatbotAPIPayload = {
+        message: query,
+        image_data_url: null,
+        user_profile: user_profile,
+        conversation_history: conversationHistory,
+      };
+
+      sendToAPI(payload);
+    }
+  };
+
+  // Clean up file input on unmount / re-render
+  // (No explicit cleanup needed for FileReader)
+
   const mapNounToCategory = (noun: string): string => {
     const n = noun.toLowerCase();
     if (["dress", "gown", "sundress", "dresses", "gowns", "sundresses"].includes(n)) return "dress";
@@ -74,184 +293,13 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
     return "all";
   };
 
-  const handleSendMessage = (textToSend?: string) => {
-    const query = (textToSend || inputValue).trim();
-    if (!query) return;
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: "user",
-      text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setInputValue("");
-    setIsTyping(true);
-
-    if (loading) {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          text: "Still loading the catalog database. Please wait a moment and try again!",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        }]);
-        setIsTyping(false);
-      }, 600);
-      return;
-    }
-
-    if (error) {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          text: `Could not load the catalog: ${error}. Please try refreshing the page.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        }]);
-        setIsTyping(false);
-      }, 600);
-      return;
-    }
-
-    const lowerQuery = query.toLowerCase();
-
-    // 3-PASS INTENT PARSER
-    let targetCategory = "all";
-
-    // Pass 1: Interrogative / Action verb target (e.g. "which dress goes with...", "what jewelry matches...")
-    const pass1Match = lowerQuery.match(
-      /(?:which|what|best|choose|find|show|recommend|suggest|get|pick|pair)\s+(?:a\s+|the\s+|some\s+)?(dresses|dress|gowns|gown|sundresses|sundress|jewelleries|jewelry|jewel|necklaces|necklace|earrings|earring|bracelets|bracelet|chokers|choker|rings|ring|bottoms|bottom|pants|pant|trousers|trouser|skirts|skirt|jeans|jean|shorts|short|tops|top|shirts|shirt|blouses|blouse|sweaters|sweater|cardigans|cardigan)/i
-    );
-
-    if (pass1Match && pass1Match[1]) {
-      targetCategory = mapNounToCategory(pass1Match[1]);
-    } else {
-      // Pass 2: Prepositional target (e.g. "jewelry for a dress", "dresses with gold necklace")
-      const pass2Match = lowerQuery.match(
-        /(dresses|dress|gowns|gown|sundresses|sundress|jewelleries|jewelry|jewel|necklaces|necklace|earrings|earring|bracelets|bracelet|chokers|choker|rings|ring|bottoms|bottom|pants|pant|trousers|trouser|skirts|skirt|jeans|jean|shorts|short|tops|top|shirts|shirt|blouses|blouse|sweaters|sweater|cardigans|cardigan)\s+(?:for|with|matching|pairing|to\s+go\s+with)/i
-      );
-
-      if (pass2Match && pass2Match[1]) {
-        targetCategory = mapNounToCategory(pass2Match[1]);
-      } else {
-        // Pass 3: First apparel/jewelry noun mentioned in query
-        const pass3Match = lowerQuery.match(
-          /(dresses|dress|gowns|gown|sundresses|sundress|jewelleries|jewelry|jewel|necklaces|necklace|earrings|earring|bracelets|bracelet|chokers|choker|rings|ring|bottoms|bottom|pants|pant|trousers|trouser|skirts|skirt|jeans|jean|shorts|short|tops|top|shirts|shirt|blouses|blouse|sweaters|sweater|cardigans|cardigan)/i
-        );
-        if (pass3Match && pass3Match[1]) {
-          targetCategory = mapNounToCategory(pass3Match[1]);
-        }
-      }
-    }
-
-    // Parse Max Price Limit
-    let maxPrice: number | null = null;
-    const priceMatch =
-      lowerQuery.match(/(?:under|less than|below|max|\$)\s*(\d+)/i) ||
-      lowerQuery.match(/(\d+)\s*(?:dollars|bucks)/i);
-    if (priceMatch && priceMatch[1]) {
-      const parsed = parseInt(priceMatch[1], 10);
-      if (!isNaN(parsed) && parsed > 0) {
-        maxPrice = parsed;
-      }
-    }
-
-    // Aesthetic & Seasonal Palette Pairing Logic
-    let paletteTag = "";
-    if (selectedPaletteId === "warm-autumn" || lowerQuery.includes("autumn")) paletteTag = "warm-toned";
-    else if (selectedPaletteId === "cool-summer" || lowerQuery.includes("summer")) paletteTag = "cool-toned";
-    else if (selectedPaletteId === "spring-radiance" || lowerQuery.includes("spring")) paletteTag = "warm-toned";
-    else if (selectedPaletteId === "winter-contrast" || lowerQuery.includes("winter")) paletteTag = "cool-toned";
-
-    // Style keywords
-    const styleKeywords = ["casual", "formal", "boho", "minimal", "vintage", "chic", "glamour", "party", "romantic", "business", "tailored", "cozy", "resortwear", "gold", "pearl", "silver", "emerald", "burgundy", "navy", "silk", "velvet", "denim", "linen"].filter(
-      (k) => lowerQuery.includes(k)
-    );
-
-    // Score items
-    let scoredItems = catalog.map((item) => {
-      let score = 0;
-
-      // HARD CATEGORY FILTERING: Disqualify items not in requested target category!
-      if (targetCategory !== "all" && item.category !== targetCategory) {
-        return { item, score: -1 };
-      }
-
-      // Max price constraint
-      if (maxPrice !== null && item.price > maxPrice) {
-        return { item, score: -1 };
-      }
-
-      // Palette undertone match
-      if (paletteTag && item.style.includes(paletteTag)) {
-        score += 3;
-      }
-
-      // Style/Look keyword matches
-      styleKeywords.forEach((kw) => {
-        const itemText = `${item.name} ${item.color} ${item.style} ${item.category}`.toLowerCase();
-        if (itemText.includes(kw)) score += 5;
-      });
-
-      return { item, score };
-    }).filter((obj) => obj.score >= 0);
-
-    // Sort by highest match score
-    scoredItems.sort((a, b) => b.score - a.score);
-
-    // If zero matches under tight keywords, relax style keywords but KEEP target category & price limits
-    if (scoredItems.length === 0) {
-      scoredItems = catalog.filter(
-        (item) =>
-          (targetCategory === "all" || item.category === targetCategory) &&
-          (maxPrice === null || item.price <= maxPrice)
-      ).map((item) => ({ item, score: 1 }));
-    }
-
-    const matchedItems = scoredItems.map((obj) => obj.item);
-    const recommendedIds = matchedItems.map((item) => item.id);
-
-    // Apply HARD filter sync to CatalogExplorer on right panel!
-    onApplyRecommendation({
-      category: targetCategory,
-      maxPrice: maxPrice,
-      searchQuery: "",
-      recommendedIds: recommendedIds,
-    });
-
-    // Generate Dynamic AI Response String
-    setTimeout(() => {
-      let aiText = "";
-
-      if (matchedItems.length > 0) {
-        const top3 = matchedItems.slice(0, 3);
-        const itemFormatted = top3.map((m) => `**${m.name}** ($${m.price.toFixed(2)})`).join(", ");
-
-        aiText = `Based on your request, the best matching **${targetCategory.toUpperCase()}** picks for your **${palette.name}** profile are: ${itemFormatted}. I've hard-filtered your catalog grid on the right to display ONLY these **${matchedItems.length}** matching items! ✨`;
-      } else {
-        aiText = `I couldn't find catalog items matching "${query}". I've reset the catalog grid so you can explore all items!`;
-        onApplyRecommendation({
-          category: "all",
-          maxPrice: null,
-          searchQuery: "",
-          recommendedIds: [],
-        });
-      }
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: "ai",
-        text: aiText,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        matchedCount: matchedItems.length,
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 600);
+  const scrollToBottomAuto = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    scrollToBottomAuto();
+  }, [messages, isTyping]);
 
   return (
     <div className="bg-white/90 backdrop-blur-md border border-sky-100/60 rounded-3xl p-5 sm:p-6 shadow-xl shadow-sky-100/50 flex flex-col h-[680px]">
@@ -326,12 +374,51 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
         {isTyping && (
           <div className="flex items-center gap-2 text-xs text-slate-400 bg-sky-50/70 p-3 rounded-2xl w-fit border border-sky-100 font-medium">
             <Bot className="w-4 h-4 text-sky-600 animate-bounce" />
-            <span>Parsing target intent &amp; applying hard grid filter...</span>
+            <span>AI is thinking...</span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Image upload button - triggers hidden file input */}
+      <div className="pt-2 border-t border-sky-100/60 shrink-0">
+        <label htmlFor="image-upload-input" className="flex items-center gap-2 cursor-pointer select-none">
+          <Sparkles className="w-3.5 h-3.5 text-yellow-600" />
+          <span className="text-[10px] font-bold text-sky-600">Upload Photo</span>
+          <input
+            id="image-upload-input"
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleFileSelect}
+          />
+        </label>
+      </div>
+
+      {/* Image preview section - shown when an image is uploaded */}
+      {imageDataUrl && (
+        <div className="pt-3 pb-2 border-t border-sky-100/60 shrink-0 space-y-2">
+          <div className="flex items-center gap-2">
+            <img
+              src={imageDataUrl}
+              alt="User uploaded photo"
+              className="w-24 h-24 rounded-2xl object-cover border border-sky-200"
+            />
+            <span className="text-[10px] font-bold text-slate-600">Photo uploaded</span>
+            <button
+              type="button"
+              onClick={clearImage}
+              className="ml-2 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 text-center">
+            Drag & drop or click to change photo
+          </p>
+        </div>
+      )}
 
       {/* Suggestion Chips */}
       <div className="pt-3 pb-2 border-t border-sky-100/60 shrink-0 space-y-1.5">
@@ -374,14 +461,14 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
           <button
             type="submit"
             suppressHydrationWarning
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() && !imageDataUrl}
             className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#90CDF4] to-[#70B4F8] hover:from-[#70B4F8] hover:to-[#5096F6] text-white flex items-center justify-center disabled:opacity-40 transition-all cursor-pointer shadow-sm shrink-0"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
         <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium flex items-center justify-center gap-1">
-          <CornerDownLeft className="w-2.5 h-2.5" /> Press Enter to query catalog &amp; filter grid
+          <CornerDownLeft className="w-2.5 h-2.5" /> Press Enter to query catalog & filter grid
         </p>
       </div>
     </div>

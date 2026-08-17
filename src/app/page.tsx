@@ -47,7 +47,7 @@ export default function Home() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load existing profile for this session on mount
+// Load existing profile for this session on mount
   useEffect(() => {
     const sessionId = getSessionId();
 
@@ -74,6 +74,15 @@ JSON.stringify({ message: error.message, hint: error.hint, details: error.detail
       }
     });
   }, []);
+
+  // Build userProfile from available state to pass to AIChatbot
+  // No additional Supabase lookup needed — use existing state
+  const userProfile = {
+    seasonal_palette: selectedPaletteId,
+    measurements: measurements,
+    body_shape: "",
+    style_preference: "",
+  };
 
   const handleMeasurementChange = (key: keyof MeasurementState, val: number) => {
     setMeasurements((prev) => ({
@@ -253,6 +262,7 @@ JSON.stringify({ message: error.message, hint: error.hint, details: error.detail
                   measurements={measurements}
                   selectedPaletteId={selectedPaletteId}
                   onApplyRecommendation={handleAIRecommendationFilter}
+                  userProfile={userProfile}
                 />
               </div>
 
