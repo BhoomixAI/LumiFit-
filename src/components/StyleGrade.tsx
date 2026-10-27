@@ -49,7 +49,7 @@ export const StyleGrade: React.FC<StyleGradeProps> = ({
 
   if (vtoTrayItems.length > 0) {
     let warmMatchCount = 0;
-    let totalCount = vtoTrayItems.length;
+    const totalCount = vtoTrayItems.length;
 
     vtoTrayItems.forEach((item) => {
       const isWarmItem =

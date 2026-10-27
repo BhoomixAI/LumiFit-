@@ -3,10 +3,8 @@ import OpenAI from "openai";
 import type { CatalogItem } from "@/data/catalog";
 import { CATALOG_DATA } from "@/data/catalog";
 
-const openai = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-});
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB limit for base64 payload
 
@@ -58,10 +56,11 @@ function validateImageDataUrl(url: string): { valid: boolean; sizeBytes?: number
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // 1. Validate OpenAI API key exists
-  if (!process.env.OPENAI_API_KEY) {
+  // 1. Validate Gemini API key exists
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
-      { ok: false, error: "OpenAI API key not configured on server." },
+      { ok: false, error: "GEMINI_API_KEY is not configured on the server." },
       { status: 500 }
     );
   }
@@ -112,8 +111,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // 6. Build the OpenAI chat messages
-  const apiKey = process.env.GEMINI_API_KEY;
-  const client = new OpenAI({ apiKey, baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/" });
+  const client = new OpenAI({ apiKey, baseURL: GEMINI_BASE_URL });
 
   // --- Build system prompt parts using array join (safe, no template-literal issues) ---
   const profileParts: string[] = [];
@@ -210,15 +208,15 @@ type ImageVideoMsg = { type: string; image_url?: { url: string } };
   try {
     // Type assertion: messages array content types are compatible with OpenAI SDK
     completion = await client.chat.completions.create({
-      model: "gemini-3.6-flash",
-      messages: messages as any,
+      model: GEMINI_MODEL,
+      messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
       response_format: { type: "json_object" },
       temperature: 0.7,
     });
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("Gemini API error:", error);
     return NextResponse.json(
-      { ok: false, error: "Failed to communicate with OpenAI API." },
+      { ok: false, error: "Failed to communicate with the Gemini API." },
       { status: 500 }
     );
   }

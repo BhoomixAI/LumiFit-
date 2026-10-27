@@ -80,7 +80,7 @@ JSON.stringify({ message: error.message, hint: error.hint, details: error.detail
   const userProfile = {
     seasonal_palette: selectedPaletteId,
     measurements: measurements,
-    body_shape: "",
+    body_shape: calculateBodyShape(measurements),
     style_preference: "",
   };
 
